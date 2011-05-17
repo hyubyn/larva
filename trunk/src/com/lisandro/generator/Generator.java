@@ -19,7 +19,9 @@ public class Generator {
             EntityBuilder builder=new EntityBuilder(tabla);
             System.out.println("TABLA=" + schemaName + "." + tabla);
             ResultSet rsColumns = db.getMetaData().getColumns(schemaName, null, tabla, null);
-            builder.createMainClass(rsColumns);
+            builder.createModel(rsColumns);
+            builder.createMainClass();
+            builder.createManager();
             while (rsColumns.next()) {
                // El contenido de cada columna del ResultSet se puede ver en
                // la API de java, en el metodo getColumns() de DataBaseMetaData

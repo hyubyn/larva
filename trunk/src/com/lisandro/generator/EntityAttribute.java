@@ -2,6 +2,7 @@ package com.lisandro.generator;
 
 public class EntityAttribute {
     private String fieldName;
+    private String tableFieldName;
     private Class fieldClass;
     private boolean primaryKey;
     private boolean foreignKey;
@@ -35,6 +36,12 @@ public class EntityAttribute {
     }
     public void setForeignClass(EntityAttribute foreignClass) {
         this.foreignClass = foreignClass;
+    }
+    public String getTableFieldName() {
+        return tableFieldName;
+    }
+    public void setTableFieldName(String tableFieldName) {
+        this.tableFieldName = tableFieldName;
     }
     
 }

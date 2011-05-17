@@ -25,7 +25,7 @@ public class Utils {
         // Borrando los espacios en blanco
         texto = texto.trim();
         // cogiendo un string a partir de la segunda letra
-        resto = texto.substring(1).toLowerCase();
+        resto = texto.substring(1);
         // cogiendo la primera letra en un char
         letra = texto.charAt(0);
         // poniendo dicha letra en mayusculas

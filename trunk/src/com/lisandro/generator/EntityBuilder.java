@@ -1,12 +1,22 @@
 package com.lisandro.generator;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+
+import org.joda.time.LocalDate;
 
 import com.lisandro.generator.util.Constants;
 import com.lisandro.generator.util.Utils;
+
+import freemarker.template.Configuration;
+import freemarker.template.DefaultObjectWrapper;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
 
 public class EntityBuilder {
     private static final String path = "c:/tmp/creator/";
@@ -23,9 +33,17 @@ public class EntityBuilder {
     private String package_base = "";
     private Class clazz = null;
     EntityModel entityModel=new EntityModel();
+    private static final String[] excludeColumns=new String[]{
+        "USUARIOCREAR","FECHACREAR","USUARIOMODIFICAR","FECHAMODIFICAR","USUARIOBORRAR","FECHABORRAR",
+        "BORRADO","VERSION"
+    };
+
+    Configuration templateConfig=new Configuration();
     
     public EntityBuilder(String tableName){
         this.class_name=Utils.tableNameToClassName(tableName);
+        entityModel.setTableName(tableName);
+        entityModel.setClassName(class_name);
         crearEstructuraDirectorio();
     }
     
@@ -36,25 +54,33 @@ public class EntityBuilder {
         File dir = new File(baseDir.getAbsolutePath() + "/dao");
         dir.mkdirs();
         DAO_URL = dir.getAbsolutePath();
+        
         dir = new File(baseDir.getAbsolutePath() + "/dao/impl");
         dir.mkdirs();
+        
         dir = new File(baseDir.getAbsolutePath() + "/dto");
         dir.mkdirs();
         DTO_URL = dir.getAbsolutePath();
+        
         dir = new File(baseDir.getAbsolutePath() + "/model");
         dir.mkdirs();
         CLASS_URL = dir.getAbsolutePath();
+        
         dir = new File(path + "/flows/" + Utils.toLowerCamelCase(class_name));
         dir.mkdirs();
         FLOW_URL = dir.getAbsolutePath();
+        
         dir = new File(path + "/jsp/" + Utils.toLowerCamelCase(class_name));
         dir.mkdirs();
         JSP_URL = dir.getAbsolutePath();
-        MANAGER_URL = baseDir.getAbsolutePath()+ "/service";
-    }
-
-    public void createMainClass(ResultSet rsColumns) {
         
+        dir = new File(baseDir.getAbsolutePath() + "/service");
+        dir.mkdirs();
+        MANAGER_URL = dir.getAbsolutePath();
+        dir = new File(baseDir.getAbsolutePath() + "/service/impl");
+        dir.mkdirs();
+    }
+    public void createModel(ResultSet rsColumns) {
         try {
             while (rsColumns.next()) {
                 // El contenido de cada columna del ResultSet se puede ver en
@@ -76,22 +102,85 @@ public class EntityBuilder {
                 //DATE
                 //TIMESTAMP
                 if(tipoColumna.contains("DATE")||tipoColumna.contains("TIMESTAMP")){
-                    fieldClass=Long.class;
+                    fieldClass=LocalDate.class;
                 }
+                if(fieldClass==null)
+                    continue;
+                boolean pasar=false;
+                for(String col:excludeColumns){
+                    if(col.equalsIgnoreCase(nombreColumna)){
+                        pasar=true;
+                        break;
+                    }
+                        
+                }
+                if(pasar)
+                    continue;
                 entityAttribute.setFieldClass(fieldClass);
                 entityAttribute.setFieldName(nombreColumna.toLowerCase());
+                entityAttribute.setTableFieldName(nombreColumna);
                 entityModel.getAtributos().add(entityAttribute);
              }
         } catch (SQLException e1) {
             // TODO Auto-generated catch block
             e1.printStackTrace();
         }
+    }
+    public void createMainClass() {
+        
         try {
-            new File(CLASS_URL+"/"+class_name+".java").createNewFile();
+            templateConfig.setDirectoryForTemplateLoading(
+                    new File("./bin/resources/templates"));
+            templateConfig.setObjectWrapper(new DefaultObjectWrapper());
+            /* Get or create a template */
+            Template template = templateConfig.getTemplate("clase.ftl");
+
+            PrintWriter pw= new PrintWriter(CLASS_URL+"/"+class_name+".java");
+            template.process(entityModel,pw);
+            pw.flush();
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
+        } catch (TemplateException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
         }
+        
+    }
+
+    
+    public void createManager(){
+        try {
+            templateConfig.setDirectoryForTemplateLoading(
+                    new File("./bin/resources/templates"));
+            System.out.println(new File("./").getAbsolutePath());
+            templateConfig.setObjectWrapper(new DefaultObjectWrapper());
+            /* Get or create a template */
+            Template templateManager = templateConfig.getTemplate("manager.ftl");
+
+            PrintWriter pwManager= new PrintWriter(MANAGER_URL+"/"+class_name+"Manager.java");
+            templateManager.process(entityModel,pwManager);
+            pwManager.flush();
+            
+            Template templateManagerDefault = templateConfig.getTemplate("managerDefault.ftl");
+            PrintWriter pwManagerDefault= new PrintWriter(MANAGER_URL+"/impl/"+class_name+"ManagerDefault.java");
+            templateManagerDefault.process(entityModel,pwManagerDefault);
+            pwManagerDefault.flush();
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (TemplateException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+    public void createDto(){
+        
+    }
+    public void createDao(){
         
     }
 }
