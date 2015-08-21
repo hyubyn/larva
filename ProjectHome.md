@@ -1,0 +1,1 @@
+The idea is a Eclipse plugin in order to creating code (View Layer, Business Layer and Model Layer) starting from the Data Model
